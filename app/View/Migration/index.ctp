@@ -1,6 +1,6 @@
 <div class="row-fluid">
     <div class="alert alert-info">
-        <h3>File Upload Question</h3>
+        <h3>Migration</h3>
     </div>
 
     <p>Complete the File Upload feature and import the attached <?php echo $this->Html->link('<i class="icon-share
@@ -12,19 +12,12 @@
     <div class="alert">
         <h3>Import Form</h3>
     </div>
-
-    <?php if($message != ""): ?>
-    <div class="alert alert-<?php echo $message['type']; ?>">
-        <p><?php echo $message['content']; ?></p>
-    </div>
-    <?php endif; ?>
-
     <?php
-        echo $this->Form->create('FileUpload', array( 'type' => 'file'));
-        echo $this->Form->input('file', array('label' => 'File Upload', 'type' => 'file'));
-        echo $this->Form->submit('Upload', array('class' => 'btn btn-primary'));
-        echo $this->Form->end();
-    ?>
+echo $this->Form->create('FileUpload', array( 'type' => 'file'));
+echo $this->Form->input('file', array('label' => 'File Upload', 'type' => 'file'));
+echo $this->Form->submit('Upload', array('class' => 'btn btn-primary'));
+echo $this->Form->end();
+?>
 
     <hr />
 

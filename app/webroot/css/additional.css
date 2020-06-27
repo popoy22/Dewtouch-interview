@@ -1,0 +1,7 @@
+#table_record {
+  border-collapse: collapse;
+}
+.editable_element {
+  display: none;
+  width: 100%;
+}

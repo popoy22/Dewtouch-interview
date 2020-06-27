@@ -551,159 +551,125 @@ class String {
 		}
 
 		if ($html) {
-			if (mb_strlen(preg_replace('/<.*?>/', '', $text)) <= $length) {
-				return $text;
-			}
-			$totalLength = mb_strlen(strip_tags($ellipsis));
-			$openTags = array();
-			$truncate = '';
+			if (mb_strlen(preg_replace('/<.*?>/', '', $text)) <= $length) { return $text; }
+    $totalLength=mb_strlen(strip_tags($ellipsis)); $openTags=array(); $truncate='' ; preg_match_all('/(<\/?([\w+]+)[^>
+    ]*>)?([^<>]*)/', $text, $tags, PREG_SET_ORDER);
+        foreach ($tags as $tag) {
+        if (!preg_match('/img|br|input|hr|area|base|basefont|col|frame|isindex|link|meta|param/s', $tag[2])) {
+        if (preg_match('/<[\w]+[^>]*>/s', $tag[0])) {
+            array_unshift($openTags, $tag[2]);
+            } elseif (preg_match('/<\ /([\w]+)[^>]*>/s', $tag[0], $closeTag)) {
+                $pos = array_search($closeTag[1], $openTags);
+                if ($pos !== false) {
+                array_splice($openTags, $pos, 1);
+                }
+                }
+                }
+                $truncate .= $tag[1];
 
-			preg_match_all('/(<\/?([\w+]+)[^>]*>)?([^<>]*)/', $text, $tags, PREG_SET_ORDER);
-			foreach ($tags as $tag) {
-				if (!preg_match('/img|br|input|hr|area|base|basefont|col|frame|isindex|link|meta|param/s', $tag[2])) {
-					if (preg_match('/<[\w]+[^>]*>/s', $tag[0])) {
-						array_unshift($openTags, $tag[2]);
-					} elseif (preg_match('/<\/([\w]+)[^>]*>/s', $tag[0], $closeTag)) {
-						$pos = array_search($closeTag[1], $openTags);
-						if ($pos !== false) {
-							array_splice($openTags, $pos, 1);
-						}
-					}
-				}
-				$truncate .= $tag[1];
+                $contentLength = mb_strlen(preg_replace('/&[0-9a-z]{2,8};|&#[0-9]{1,7};|&#x[0-9a-f]{1,6};/i', ' ',
+                $tag[3]));
+                if ($contentLength + $totalLength > $length) {
+                $left = $length - $totalLength;
+                $entitiesLength = 0;
+                if (preg_match_all('/&[0-9a-z]{2,8};|&#[0-9]{1,7};|&#x[0-9a-f]{1,6};/i', $tag[3], $entities,
+                PREG_OFFSET_CAPTURE)) {
+                foreach ($entities[0] as $entity) {
+                if ($entity[1] + 1 - $entitiesLength <= $left) { $left--; $entitiesLength +=mb_strlen($entity[0]); }
+                    else { break; } } } $truncate .=mb_substr($tag[3], 0, $left + $entitiesLength); break; } else {
+                    $truncate .=$tag[3]; $totalLength +=$contentLength; } if ($totalLength>= $length) {
+                    break;
+                    }
+                    }
+                    } else {
+                    if (mb_strlen($text) <= $length) { return $text; } $truncate=mb_substr($text, 0, $length -
+                        mb_strlen($ellipsis)); } if (!$exact) { $spacepos=mb_strrpos($truncate, ' ' ); if ($html) {
+                        $truncateCheck=mb_substr($truncate, 0, $spacepos); $lastOpenTag=mb_strrpos($truncateCheck, '<'
+                        ); $lastCloseTag=mb_strrpos($truncateCheck, '>' ); if ($lastOpenTag> $lastCloseTag) {
+                        preg_match_all('/<[\w]+[^>]*>/s', $truncate, $lastTagMatches);
+                            $lastTag = array_pop($lastTagMatches[0]);
+                            $spacepos = mb_strrpos($truncate, $lastTag) + mb_strlen($lastTag);
+                            }
+                            $bits = mb_substr($truncate, $spacepos);
+                            preg_match_all('/<\ /([a-z]+)>/', $bits, $droppedTags, PREG_SET_ORDER);
+                                if (!empty($droppedTags)) {
+                                if (!empty($openTags)) {
+                                foreach ($droppedTags as $closingTag) {
+                                if (!in_array($closingTag[1], $openTags)) {
+                                array_unshift($openTags, $closingTag[1]);
+                                }
+                                }
+                                } else {
+                                foreach ($droppedTags as $closingTag) {
+                                $openTags[] = $closingTag[1];
+                                }
+                                }
+                                }
+                                }
+                                $truncate = mb_substr($truncate, 0, $spacepos);
+                                }
+                                $truncate .= $ellipsis;
 
-				$contentLength = mb_strlen(preg_replace('/&[0-9a-z]{2,8};|&#[0-9]{1,7};|&#x[0-9a-f]{1,6};/i', ' ', $tag[3]));
-				if ($contentLength + $totalLength > $length) {
-					$left = $length - $totalLength;
-					$entitiesLength = 0;
-					if (preg_match_all('/&[0-9a-z]{2,8};|&#[0-9]{1,7};|&#x[0-9a-f]{1,6};/i', $tag[3], $entities, PREG_OFFSET_CAPTURE)) {
-						foreach ($entities[0] as $entity) {
-							if ($entity[1] + 1 - $entitiesLength <= $left) {
-								$left--;
-								$entitiesLength += mb_strlen($entity[0]);
-							} else {
-								break;
-							}
-						}
-					}
+                                if ($html) {
+                                foreach ($openTags as $tag) {
+                                $truncate .= '</' . $tag . '>' ; } } return $truncate; } /** * Extracts an excerpt from
+                                    the text surrounding the phrase with a number of characters on each side *
+                                    determined by radius. * * @param string $text String to search the phrase in *
+                                    @param string $phrase Phrase that will be searched for * @param int $radius The
+                                    amount of characters that will be returned on each side of the founded phrase *
+                                    @param string $ellipsis Ending that will be appended * @return string Modified
+                                    string * @link
+                                    http://book.cakephp.org/2.0/en/core-libraries/helpers/text.html#TextHelper::excerpt
+                                    */ public static function excerpt($text, $phrase, $radius=100, $ellipsis='...' ) {
+                                    if (empty($text) || empty($phrase)) { return self::truncate($text, $radius * 2,
+                                    array('ellipsis'=> $ellipsis));
+                                }
 
-					$truncate .= mb_substr($tag[3], 0, $left + $entitiesLength);
-					break;
-				} else {
-					$truncate .= $tag[3];
-					$totalLength += $contentLength;
-				}
-				if ($totalLength >= $length) {
-					break;
-				}
-			}
-		} else {
-			if (mb_strlen($text) <= $length) {
-				return $text;
-			}
-			$truncate = mb_substr($text, 0, $length - mb_strlen($ellipsis));
-		}
-		if (!$exact) {
-			$spacepos = mb_strrpos($truncate, ' ');
-			if ($html) {
-				$truncateCheck = mb_substr($truncate, 0, $spacepos);
-				$lastOpenTag = mb_strrpos($truncateCheck, '<');
-				$lastCloseTag = mb_strrpos($truncateCheck, '>');
-				if ($lastOpenTag > $lastCloseTag) {
-					preg_match_all('/<[\w]+[^>]*>/s', $truncate, $lastTagMatches);
-					$lastTag = array_pop($lastTagMatches[0]);
-					$spacepos = mb_strrpos($truncate, $lastTag) + mb_strlen($lastTag);
-				}
-				$bits = mb_substr($truncate, $spacepos);
-				preg_match_all('/<\/([a-z]+)>/', $bits, $droppedTags, PREG_SET_ORDER);
-				if (!empty($droppedTags)) {
-					if (!empty($openTags)) {
-						foreach ($droppedTags as $closingTag) {
-							if (!in_array($closingTag[1], $openTags)) {
-								array_unshift($openTags, $closingTag[1]);
-							}
-						}
-					} else {
-						foreach ($droppedTags as $closingTag) {
-							$openTags[] = $closingTag[1];
-						}
-					}
-				}
-			}
-			$truncate = mb_substr($truncate, 0, $spacepos);
-		}
-		$truncate .= $ellipsis;
+                                $append = $prepend = $ellipsis;
 
-		if ($html) {
-			foreach ($openTags as $tag) {
-				$truncate .= '</' . $tag . '>';
-			}
-		}
+                                $phraseLen = mb_strlen($phrase);
+                                $textLen = mb_strlen($text);
 
-		return $truncate;
-	}
+                                $pos = mb_strpos(mb_strtolower($text), mb_strtolower($phrase));
+                                if ($pos === false) {
+                                return mb_substr($text, 0, $radius) . $ellipsis;
+                                }
 
-/**
- * Extracts an excerpt from the text surrounding the phrase with a number of characters on each side
- * determined by radius.
- *
- * @param string $text String to search the phrase in
- * @param string $phrase Phrase that will be searched for
- * @param int $radius The amount of characters that will be returned on each side of the founded phrase
- * @param string $ellipsis Ending that will be appended
- * @return string Modified string
- * @link http://book.cakephp.org/2.0/en/core-libraries/helpers/text.html#TextHelper::excerpt
- */
-	public static function excerpt($text, $phrase, $radius = 100, $ellipsis = '...') {
-		if (empty($text) || empty($phrase)) {
-			return self::truncate($text, $radius * 2, array('ellipsis' => $ellipsis));
-		}
+                                $startPos = $pos - $radius;
+                                if ($startPos <= 0) { $startPos=0; $prepend='' ; } $endPos=$pos + $phraseLen + $radius;
+                                    if ($endPos>= $textLen) {
+                                    $endPos = $textLen;
+                                    $append = '';
+                                    }
 
-		$append = $prepend = $ellipsis;
+                                    $excerpt = mb_substr($text, $startPos, $endPos - $startPos);
+                                    $excerpt = $prepend . $excerpt . $append;
 
-		$phraseLen = mb_strlen($phrase);
-		$textLen = mb_strlen($text);
+                                    return $excerpt;
+                                    }
 
-		$pos = mb_strpos(mb_strtolower($text), mb_strtolower($phrase));
-		if ($pos === false) {
-			return mb_substr($text, 0, $radius) . $ellipsis;
-		}
+                                    /**
+                                    * Creates a comma separated list where the last two items are joined with 'and',
+                                    forming natural language.
+                                    *
+                                    * @param array $list The list to be joined.
+                                    * @param string $and The word used to join the last and second last items together
+                                    with. Defaults to 'and'.
+                                    * @param string $separator The separator used to join all the other items together.
+                                    Defaults to ', '.
+                                    * @return string The glued together string.
+                                    * @link
+                                    http://book.cakephp.org/2.0/en/core-libraries/helpers/text.html#TextHelper::toList
+                                    */
+                                    public static function toList($list, $and = null, $separator = ', ') {
+                                    if ($and === null) {
+                                    $and = __d('cake', 'and');
+                                    }
+                                    if (count($list) > 1) {
+                                    return implode($separator, array_slice($list, null, -1)) . ' ' . $and . ' ' .
+                                    array_pop($list);
+                                    }
 
-		$startPos = $pos - $radius;
-		if ($startPos <= 0) {
-			$startPos = 0;
-			$prepend = '';
-		}
-
-		$endPos = $pos + $phraseLen + $radius;
-		if ($endPos >= $textLen) {
-			$endPos = $textLen;
-			$append = '';
-		}
-
-		$excerpt = mb_substr($text, $startPos, $endPos - $startPos);
-		$excerpt = $prepend . $excerpt . $append;
-
-		return $excerpt;
-	}
-
-/**
- * Creates a comma separated list where the last two items are joined with 'and', forming natural language.
- *
- * @param array $list The list to be joined.
- * @param string $and The word used to join the last and second last items together with. Defaults to 'and'.
- * @param string $separator The separator used to join all the other items together. Defaults to ', '.
- * @return string The glued together string.
- * @link http://book.cakephp.org/2.0/en/core-libraries/helpers/text.html#TextHelper::toList
- */
-	public static function toList($list, $and = null, $separator = ', ') {
-		if ($and === null) {
-			$and = __d('cake', 'and');
-		}
-		if (count($list) > 1) {
-			return implode($separator, array_slice($list, null, -1)) . ' ' . $and . ' ' . array_pop($list);
-		}
-
-		return array_pop($list);
-	}
-}
+                                    return array_pop($list);
+                                    }
+                                    }

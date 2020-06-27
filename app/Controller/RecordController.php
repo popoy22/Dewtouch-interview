@@ -5,14 +5,16 @@
 			ini_set('memory_limit','256M');
 			set_time_limit(0);
 			
-			$this->setFlash('Listing Record page too slow, try to optimize it.');
 			
-			
-			$records = $this->Record->find('all');
+
+			$records = Cache::read('newest_records', 'short');
+			if (!$records) {
+				$this->setFlash('Listing Record Saved from Cache duration 1hr');
+				$records = $this->Record->find('all');
+				Cache::write('newest_records', $records, 'short');
+			}
 			
 			$this->set('records',$records);
-			
-			
 			$this->set('title',__('List Record'));
 		}
 		
