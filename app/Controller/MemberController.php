@@ -30,9 +30,8 @@ class MemberController extends AppController {
         $this->set('title', __('Migrate Members'));
         $this->set('members',$members);
         $this->set('message',$message);
-		$this->set('title',__('Members'));
         
-    }
+	 }
     
     
     public function reset(){
